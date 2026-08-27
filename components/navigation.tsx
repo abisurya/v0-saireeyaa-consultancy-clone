@@ -98,7 +98,7 @@ export default function Navigation() {
                 ease: "easeInOut",
               }}
             >
-              <Link href="/">
+              <Link href="/" className="inline-block animate-logo-rotation" aria-label="Saireeyaa Consultancy home">
                 <motion.img
                   src="/images/saireeyaa-logo.png?v=10"
                   alt="Saireeyaa Consultancy Logo"
@@ -134,7 +134,7 @@ export default function Navigation() {
             >
               <Link href="/">
                 <motion.h1
-                  className="text-xl font-bold text-gray-900 cursor-pointer"
+                  className="text-xl font-bold text-gray-900 cursor-pointer animate-brand-blink"
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.3 }}
                 >

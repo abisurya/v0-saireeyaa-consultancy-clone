@@ -59,11 +59,41 @@
 }
 
 @layer utilities {
+  .animate-brand-blink {
+    animation: brand-blink 2.4s ease-in-out infinite;
+  }
+
+  .animate-logo-rotation {
+    animation: logo-rotation 5s ease-in-out infinite;
+    transform-origin: center;
+  }
+
   .animate-accordion-down {
     animation: accordion-down 0.2s ease-out;
   }
   .animate-accordion-up {
     animation: accordion-up 0.2s ease-out;
+  }
+}
+
+@keyframes brand-blink {
+  0%, 42%, 100% {
+    opacity: 1;
+  }
+  48%, 54% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes logo-rotation {
+  0%, 82% {
+    transform: rotate(0deg);
+  }
+  91% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
@@ -73,6 +103,13 @@
   }
   to {
     height: var(--radix-accordion-content-height);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-brand-blink,
+  .animate-logo-rotation {
+    animation: none;
   }
 }
 
