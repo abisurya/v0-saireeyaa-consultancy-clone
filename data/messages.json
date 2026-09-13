@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "+94701234567",
+    "subject": "Test Subject",
+    "message": "Test message content",
+    "id": "1780476071310",
+    "status": "read",
+    "createdAt": "2026-06-03T08:41:11.310Z"
+  }
+]
