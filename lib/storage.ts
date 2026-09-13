@@ -1,16 +1,6 @@
-import fs from 'fs/promises'
-import path from 'path'
-
-const DATA_DIR = path.join(process.cwd(), 'data')
-
-// Ensure data directory exists
-async function ensureDataDir() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true })
-  } catch {
-    // Directory already exists
-  }
-}
+import { desc, eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { contactMessages, successStories, testimonials } from '@/lib/db/schema'
 
 export interface Testimonial {
   id: string
@@ -42,150 +32,75 @@ export interface ContactMessage {
   createdAt: string
 }
 
-// Testimonials storage
+const toDateString = (date: Date) => date.toISOString()
+
 export async function getTestimonials(): Promise<Testimonial[]> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, 'testimonials.json')
-  try {
-    const data = await fs.readFile(filePath, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return []
-  }
+  const rows = await db.select().from(testimonials).orderBy(desc(testimonials.createdAt))
+  return rows.map((row) => ({ ...row, image: row.image ?? undefined, createdAt: toDateString(row.createdAt) }))
 }
 
-export async function saveTestimonials(testimonials: Testimonial[]): Promise<void> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, 'testimonials.json')
-  await fs.writeFile(filePath, JSON.stringify(testimonials, null, 2))
-}
-
-export async function addTestimonial(testimonial: Omit<Testimonial, 'id' | 'createdAt'>): Promise<Testimonial> {
-  const testimonials = await getTestimonials()
-  const newTestimonial: Testimonial = {
-    ...testimonial,
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString(),
-  }
-  testimonials.push(newTestimonial)
-  await saveTestimonials(testimonials)
-  return newTestimonial
+export async function addTestimonial(input: Omit<Testimonial, 'id' | 'createdAt'>): Promise<Testimonial> {
+  const [row] = await db.insert(testimonials).values({ id: crypto.randomUUID(), ...input }).returning()
+  return { ...row, image: row.image ?? undefined, createdAt: toDateString(row.createdAt) }
 }
 
 export async function updateTestimonial(id: string, updates: Partial<Testimonial>): Promise<Testimonial | null> {
-  const testimonials = await getTestimonials()
-  const index = testimonials.findIndex(t => t.id === id)
-  if (index === -1) return null
-
-  testimonials[index] = { ...testimonials[index], ...updates }
-  await saveTestimonials(testimonials)
-  return testimonials[index]
+  const [row] = await db.update(testimonials).set({
+    ...(updates.name !== undefined && { name: updates.name }),
+    ...(updates.title !== undefined && { title: updates.title }),
+    ...(updates.content !== undefined && { content: updates.content }),
+    ...(updates.rating !== undefined && { rating: updates.rating }),
+    ...(updates.image !== undefined && { image: updates.image }),
+  }).where(eq(testimonials.id, id)).returning()
+  return row ? { ...row, image: row.image ?? undefined, createdAt: toDateString(row.createdAt) } : null
 }
 
-export async function deleteTestimonial(id: string): Promise<boolean> {
-  const testimonials = await getTestimonials()
-  const filtered = testimonials.filter(t => t.id !== id)
-  if (filtered.length === testimonials.length) return false
-
-  await saveTestimonials(filtered)
-  return true
+export async function deleteTestimonial(id: string) {
+  const result = await db.delete(testimonials).where(eq(testimonials.id, id)).returning({ id: testimonials.id })
+  return result.length > 0
 }
 
-// Success stories storage
 export async function getSuccessStories(): Promise<SuccessStory[]> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, 'success-stories.json')
-  try {
-    const data = await fs.readFile(filePath, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return []
-  }
+  const rows = await db.select().from(successStories).orderBy(desc(successStories.createdAt))
+  return rows.map((row) => ({ ...row, image: row.image ?? undefined, createdAt: toDateString(row.createdAt) }))
 }
 
-export async function saveSuccessStories(stories: SuccessStory[]): Promise<void> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, 'success-stories.json')
-  await fs.writeFile(filePath, JSON.stringify(stories, null, 2))
-}
-
-export async function addSuccessStory(story: Omit<SuccessStory, 'id' | 'createdAt'>): Promise<SuccessStory> {
-  const stories = await getSuccessStories()
-  const newStory: SuccessStory = {
-    ...story,
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString(),
-  }
-  stories.push(newStory)
-  await saveSuccessStories(stories)
-  return newStory
+export async function addSuccessStory(input: Omit<SuccessStory, 'id' | 'createdAt'>): Promise<SuccessStory> {
+  const [row] = await db.insert(successStories).values({ id: crypto.randomUUID(), ...input }).returning()
+  return { ...row, image: row.image ?? undefined, createdAt: toDateString(row.createdAt) }
 }
 
 export async function updateSuccessStory(id: string, updates: Partial<SuccessStory>): Promise<SuccessStory | null> {
-  const stories = await getSuccessStories()
-  const index = stories.findIndex(s => s.id === id)
-  if (index === -1) return null
-
-  stories[index] = { ...stories[index], ...updates }
-  await saveSuccessStories(stories)
-  return stories[index]
+  const [row] = await db.update(successStories).set({
+    ...(updates.title !== undefined && { title: updates.title }),
+    ...(updates.content !== undefined && { content: updates.content }),
+    ...(updates.category !== undefined && { category: updates.category }),
+    ...(updates.image !== undefined && { image: updates.image }),
+  }).where(eq(successStories.id, id)).returning()
+  return row ? { ...row, image: row.image ?? undefined, createdAt: toDateString(row.createdAt) } : null
 }
 
-export async function deleteSuccessStory(id: string): Promise<boolean> {
-  const stories = await getSuccessStories()
-  const filtered = stories.filter(s => s.id !== id)
-  if (filtered.length === stories.length) return false
-
-  await saveSuccessStories(filtered)
-  return true
+export async function deleteSuccessStory(id: string) {
+  const result = await db.delete(successStories).where(eq(successStories.id, id)).returning({ id: successStories.id })
+  return result.length > 0
 }
 
-// Contact messages storage
 export async function getContactMessages(): Promise<ContactMessage[]> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, 'messages.json')
-  try {
-    const data = await fs.readFile(filePath, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return []
-  }
+  const rows = await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt))
+  return rows.map((row) => ({ ...row, status: row.status as ContactMessage['status'], createdAt: toDateString(row.createdAt) }))
 }
 
-export async function saveContactMessages(messages: ContactMessage[]): Promise<void> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, 'messages.json')
-  await fs.writeFile(filePath, JSON.stringify(messages, null, 2))
-}
-
-export async function addContactMessage(message: Omit<ContactMessage, 'id' | 'createdAt' | 'status'>): Promise<ContactMessage> {
-  const messages = await getContactMessages()
-  const newMessage: ContactMessage = {
-    ...message,
-    id: Date.now().toString(),
-    status: 'new',
-    createdAt: new Date().toISOString(),
-  }
-  messages.push(newMessage)
-  await saveContactMessages(messages)
-  return newMessage
+export async function addContactMessage(input: Omit<ContactMessage, 'id' | 'createdAt' | 'status'>): Promise<ContactMessage> {
+  const [row] = await db.insert(contactMessages).values({ id: crypto.randomUUID(), ...input, status: 'new' }).returning()
+  return { ...row, status: row.status as ContactMessage['status'], createdAt: toDateString(row.createdAt) }
 }
 
 export async function updateMessageStatus(id: string, status: ContactMessage['status']): Promise<ContactMessage | null> {
-  const messages = await getContactMessages()
-  const index = messages.findIndex(m => m.id === id)
-  if (index === -1) return null
-
-  messages[index].status = status
-  await saveContactMessages(messages)
-  return messages[index]
+  const [row] = await db.update(contactMessages).set({ status }).where(eq(contactMessages.id, id)).returning()
+  return row ? { ...row, status: row.status as ContactMessage['status'], createdAt: toDateString(row.createdAt) } : null
 }
 
-export async function deleteContactMessage(id: string): Promise<boolean> {
-  const messages = await getContactMessages()
-  const filtered = messages.filter(m => m.id !== id)
-  if (filtered.length === messages.length) return false
-
-  await saveContactMessages(filtered)
-  return true
+export async function deleteContactMessage(id: string) {
+  const result = await db.delete(contactMessages).where(eq(contactMessages.id, id)).returning({ id: contactMessages.id })
+  return result.length > 0
 }
